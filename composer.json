@@ -1,0 +1,75 @@
+{
+    "name": "goldnead/statamic-identity-contracts",
+    "description": "Identity foundation for Statamic addons: a stable Identity value object and resolver contracts so addons never depend on a concrete App\\Models\\User.",
+    "type": "statamic-addon",
+    "license": "MIT",
+    "keywords": [
+        "statamic",
+        "statamic-addon",
+        "identity",
+        "contracts",
+        "foundation"
+    ],
+    "authors": [
+        {
+            "name": "Adrian Goldner",
+            "email": "info@adriangoldner.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/goldnead/statamic-identity-contracts/issues",
+        "source": "https://github.com/goldnead/statamic-identity-contracts"
+    },
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
+        "pestphp/pest": "^2.0|^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.0|^4.0"
+    },
+    "suggest": {
+        "statamic/cms": "Required only when the host application is a Statamic site.",
+        "goldnead/statamic-leadhub": "Provides a ContactLocator implementation backed by leadhub_contacts."
+    },
+    "autoload": {
+        "psr-4": {
+            "Goldnead\\IdentityContracts\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Goldnead\\IdentityContracts\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Identity Contracts",
+            "description": "Identity value object and resolver contracts for the addon family."
+        },
+        "laravel": {
+            "providers": [
+                "Goldnead\\IdentityContracts\\ServiceProvider"
+            ],
+            "aliases": {
+                "IdentityContext": "Goldnead\\IdentityContracts\\Facades\\IdentityContext"
+            }
+        }
+    },
+    "scripts": {
+        "test": [
+            "@php vendor/bin/pest"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "composer/installers": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
