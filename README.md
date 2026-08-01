@@ -7,6 +7,30 @@ concrete `App\Models\User`.
 This package owns no data: no migrations, no models, no Control Panel screens.
 It ships a value object, four contracts and inert defaults.
 
+## This is a library, not an addon
+
+Despite the name, there is nothing Statamic-specific in here. It is a plain
+Laravel package: it does not require `statamic/cms`, references no Statamic
+class, registers no Control Panel screen and adds nothing a site owner can see
+or click. It is not listed on the Statamic Marketplace and should not be.
+
+Install it if you are **building** an addon or an application that needs to
+record or notify an actor without reaching for the host application's user
+model. If you are running a Statamic site, you will get this package pulled in
+as a dependency of something else, and you never need to think about it.
+
+## Requirements
+
+| | |
+| --- | --- |
+| PHP | 8.2+ (8.3+ when running Laravel 13) |
+| Laravel | 12.x or 13.x |
+| Statamic | not required, and not used |
+
+Laravel 11 is **not** supported: every `laravel/framework` v11 release is
+covered by security advisories, so Composer declines to install the line under
+its default policy.
+
 ## Why it exists
 
 Addon extraction has a recurring blocker: an addon needs to record or notify an
@@ -148,9 +172,19 @@ pipelines) should set `resolve_from_auth` to `false`.
 ## Tests
 
 ```bash
-composer install && vendor/bin/pest
+composer install
+composer test      # Pest
+composer lint      # Pint, check only
+composer analyse   # PHPStan level 8
 ```
+
+## Support
+
+Only the latest version is supported. Bugs and questions go to
+[GitHub issues](https://github.com/goldnead/statamic-identity-contracts/issues);
+security reports go to the private channel named in
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
