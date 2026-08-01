@@ -1,0 +1,27 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 8
+
+    # PHPStan's default tmpDir is shared across every project on the machine
+    # (sys_get_temp_dir()/phpstan). On this machine that cache was poisoned by a
+    # sibling repo's phpstan.phar and produced "is not a file" internal errors
+    # here. Keep the cache inside the project.
+    tmpDir: .phpstan.cache
+
+    paths:
+        - src
+        - config
+
+    # Larastan's noEnvCallsOutsideOfConfig rule defaults to the host application's
+    # config_path(), which does not exist in a package. Without this, every env()
+    # call in our own config/ file is reported as if it sat in application code.
+    configDirectories:
+        - config
+
+    # Level 8 is clean with an EMPTY baseline (see phpstan-baseline.neon), so the
+    # ratchet is real: any new error is a new error. Levels 9-10 need 16 and 20
+    # fixes respectively and are not worth it for a 600-line package today.
+    treatPhpDocTypesAsCertain: false

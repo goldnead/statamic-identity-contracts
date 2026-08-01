@@ -1,0 +1,11 @@
+# Intentionally empty.
+#
+# The package is clean at level 8 without a single suppression, so there is
+# nothing to grandfather in. The file exists anyway so that phpstan.neon can
+# include it unconditionally, and so a future baseline entry shows up as a diff
+# in this file instead of as a silent edit to the level.
+#
+# If you find yourself adding an entry here, prefer fixing the code. If you must
+# baseline, write why next to the entry.
+parameters:
+    ignoreErrors: []

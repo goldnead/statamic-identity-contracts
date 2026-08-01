@@ -46,6 +46,7 @@ final readonly class Identity implements JsonSerializable
         }
     }
 
+    /** @param  array<string, mixed>  $meta */
     public static function user(int|string $id, ?string $email = null, ?string $name = null, ?string $contactUuid = null, array $meta = []): self
     {
         return new self(
@@ -59,6 +60,7 @@ final readonly class Identity implements JsonSerializable
         );
     }
 
+    /** @param  array<string, mixed>  $meta */
     public static function contact(string $uuid, ?string $email = null, ?string $name = null, array $meta = []): self
     {
         return new self(
@@ -74,6 +76,8 @@ final readonly class Identity implements JsonSerializable
     /**
      * The application itself acting without a human actor: webhooks, schedulers,
      * queue workers, imports.
+     *
+     * @param  array<string, mixed>  $meta
      */
     public static function system(?string $id = null, array $meta = []): self
     {
@@ -84,6 +88,7 @@ final readonly class Identity implements JsonSerializable
         );
     }
 
+    /** @param  array<string, mixed>  $meta */
     public static function anonymous(?string $anonymousId = null, array $meta = []): self
     {
         return new self(
