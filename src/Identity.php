@@ -120,26 +120,72 @@ final readonly class Identity implements JsonSerializable
         return $this->userId !== null || $this->contactUuid !== null;
     }
 
+    // The copy-on-write modifiers below all spell out every constructor argument
+    // by name. That is verbose on purpose: with positional arguments, inserting a
+    // constructor parameter would silently shift every later value into the wrong
+    // field, and the type system would not catch it because six of the eight
+    // parameters are `?string`.
+
     /** Returns a copy with the CRM join key filled in. */
     public function withContactUuid(?string $uuid): self
     {
-        return new self($this->type, $this->id, $this->userId, $uuid, $this->email, $this->name, $this->anonymousId, $this->meta);
+        return new self(
+            type: $this->type,
+            id: $this->id,
+            userId: $this->userId,
+            contactUuid: $uuid,
+            email: $this->email,
+            name: $this->name,
+            anonymousId: $this->anonymousId,
+            meta: $this->meta,
+        );
     }
 
     public function withEmail(?string $email): self
     {
-        return new self($this->type, $this->id, $this->userId, $this->contactUuid, $email, $this->name, $this->anonymousId, $this->meta);
+        return new self(
+            type: $this->type,
+            id: $this->id,
+            userId: $this->userId,
+            contactUuid: $this->contactUuid,
+            email: $email,
+            name: $this->name,
+            anonymousId: $this->anonymousId,
+            meta: $this->meta,
+        );
     }
 
     public function withAnonymousId(?string $anonymousId): self
     {
-        return new self($this->type, $this->id, $this->userId, $this->contactUuid, $this->email, $this->name, $anonymousId, $this->meta);
+        return new self(
+            type: $this->type,
+            id: $this->id,
+            userId: $this->userId,
+            contactUuid: $this->contactUuid,
+            email: $this->email,
+            name: $this->name,
+            anonymousId: $anonymousId,
+            meta: $this->meta,
+        );
     }
 
-    /** @param  array<string, mixed>  $meta */
+    /**
+     * Merges into the existing meta rather than replacing it.
+     *
+     * @param  array<string, mixed>  $meta
+     */
     public function withMeta(array $meta): self
     {
-        return new self($this->type, $this->id, $this->userId, $this->contactUuid, $this->email, $this->name, $this->anonymousId, [...$this->meta, ...$meta]);
+        return new self(
+            type: $this->type,
+            id: $this->id,
+            userId: $this->userId,
+            contactUuid: $this->contactUuid,
+            email: $this->email,
+            name: $this->name,
+            anonymousId: $this->anonymousId,
+            meta: [...$this->meta, ...$meta],
+        );
     }
 
     /**
