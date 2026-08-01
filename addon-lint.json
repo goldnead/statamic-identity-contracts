@@ -1,0 +1,30 @@
+{
+    "_why": [
+        "This package is NOT a Statamic addon and is deliberately not listed on the Statamic",
+        "Marketplace. It is a plain Composer library published on Packagist: it requires no",
+        "statamic/cms, contains zero references to any Statamic class (verified: `grep -r Statamic",
+        "src/ config/ tests/` is empty), and has no Control Panel surface. It exists so that the",
+        "Statamic addons which DO depend on it (statamic-activity, statamic-notifications,",
+        "preference-center) never have to reference a concrete App\\Models\\User.",
+        "",
+        "addon-lint therefore runs here only as a general PHP-package hygiene check. The four rules",
+        "below encode 'this is a Statamic addon' as an assumption. They are disabled with reasons,",
+        "not because the findings are wrong, but because the premise does not hold for this package.",
+        "Decision by Adrian Goldner, 2026-08-01: ship on Packagist as a library, no Marketplace listing.",
+        "",
+        "If this package ever grows a Statamic-facing surface, re-enable all four rules before the",
+        "next tag — every one of them would then be a genuine defect."
+    ],
+    "disable": [
+        "structure.composer-type",
+        "structure.statamic-metadata",
+        "bootstrap.addon-service-provider",
+        "testing.addon-testcase"
+    ],
+    "reasons": {
+        "structure.composer-type": "`type: library` is correct. `statamic-addon` would make Statamic list a package in the CP addon overview that offers the user no capability, no screen and no setting.",
+        "structure.statamic-metadata": "`extra.statamic` was removed on purpose (2026-08-01). Its only consumers are the CP addon card and the Marketplace listing, and this package appears in neither. Declaring it would advertise an addon that does not exist.",
+        "bootstrap.addon-service-provider": "`Statamic\\Providers\\AddonServiceProvider` cannot be extended without requiring statamic/cms. The package must boot in a plain Laravel application (it is a Laravel library first), and it uses none of what AddonServiceProvider supplies: no routes, no views, no fieldtypes, no Vite.",
+        "testing.addon-testcase": "`Statamic\\Testing\\AddonTestCase` lives in statamic/cms, which is not a dependency. The suite boots on Orchestra Testbench, which is the correct harness for a Laravel library and is what actually covers the supported laravel/framework range."
+    }
+}

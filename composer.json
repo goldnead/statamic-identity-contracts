@@ -1,15 +1,16 @@
 {
     "name": "goldnead/statamic-identity-contracts",
     "description": "Identity foundation for Statamic addons: a stable Identity value object and resolver contracts so addons never depend on a concrete App\\Models\\User.",
-    "type": "statamic-addon",
+    "type": "library",
     "license": "MIT",
     "keywords": [
+        "laravel",
         "statamic",
-        "statamic-addon",
         "identity",
         "contracts",
         "foundation"
     ],
+    "homepage": "https://github.com/goldnead/statamic-identity-contracts",
     "authors": [
         {
             "name": "Adrian Goldner",
@@ -44,10 +45,6 @@
         }
     },
     "extra": {
-        "statamic": {
-            "name": "Identity Contracts",
-            "description": "Identity value object and resolver contracts for the addon family."
-        },
         "laravel": {
             "providers": [
                 "Goldnead\\IdentityContracts\\ServiceProvider"
@@ -60,14 +57,21 @@
     "scripts": {
         "test": [
             "@php vendor/bin/pest"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --test"
+        ],
+        "fix": [
+            "@php vendor/bin/pint"
+        ],
+        "analyse": [
+            "@php vendor/bin/phpstan analyse"
         ]
     },
     "config": {
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "composer/installers": true,
-            "php-http/discovery": true
+            "pestphp/pest-plugin": true
         }
     },
     "minimum-stability": "stable",
