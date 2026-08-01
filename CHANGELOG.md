@@ -4,6 +4,26 @@
 
 ### Major changes
 
+- **`Identity::equals()` is now fail-closed.** It previously compared `type` and
+  `id` only. Because `id` is `null` for every identity without a durable record
+  — including the contact-shaped identity the manager builds from an email string
+  when no `ContactLocator` is bound, which is the default — two *different*
+  people compared as equal. `IdentityContext::resolve('alice@…')->equals(resolve('bob@…'))`
+  returned `true` on a stock install.
+
+  Equality is now only asserted from evidence: a matching `id`, or at least one
+  matching join key (`userId`, `contactUuid`, `anonymousId`, `email`) with no
+  other mutually-set field contradicting it. **When nothing identifies either
+  side the answer is `false`**, so `Identity::anonymous()->equals(Identity::anonymous())`
+  is now `false` where it used to be `true`.
+
+  The consumers are an activity ledger, a notification system and a preference
+  centre. A wrong "same person" merges real people's data, notifies the wrong
+  recipient and exposes someone else's preferences; a wrong "different person"
+  only misses a deduplication. Given that asymmetry, unproven equality must read
+  as inequality.
+
+  **Check any consumer that deduplicates, groups or authorizes on `equals()`.**
 - **Laravel 11 is no longer supported.** `require` is now `^12.0|^13.0`. Every
   `laravel/framework` v11 release (v11.0.0 through v11.55.0) is covered by
   security advisories, so Composer refuses to install the line under its default

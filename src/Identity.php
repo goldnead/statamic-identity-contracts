@@ -212,11 +212,56 @@ final readonly class Identity implements JsonSerializable
         );
     }
 
+    /**
+     * Whether both identities provably denote the same actor. Equality is only
+     * ever asserted from evidence: a matching `id`, or a matching join key with
+     * nothing else contradicting it.
+     *
+     * **Returns `false` when nothing identifies either side** — two anonymous
+     * visitors without an `anonymousId`, or two contacts known only by different
+     * email addresses, are not the same person. This is deliberate and
+     * fail-closed: the consumers of this package are an activity ledger, a
+     * notification system and a preference centre, where a wrong "same person"
+     * merges real people's data, delivers a notification to the wrong recipient
+     * and shows someone else's preferences, while a wrong "different person"
+     * only misses a deduplication. Given that asymmetry, unproven equality must
+     * read as inequality.
+     */
     public function equals(?self $other): bool
     {
-        return $other !== null
-            && $other->type === $this->type
-            && $other->id === $this->id;
+        if ($other === null || $other->type !== $this->type) {
+            return false;
+        }
+
+        if ($this->id !== null && $other->id !== null) {
+            return $this->id === $other->id;
+        }
+
+        // No usable id on at least one side: fall through to the identifying
+        // fields. A match needs at least one field set on both sides and equal,
+        // and no other mutually-set field may disagree.
+        $identifying = [
+            [$this->userId, $other->userId],
+            [$this->contactUuid, $other->contactUuid],
+            [$this->anonymousId, $other->anonymousId],
+            [$this->email, $other->email],
+        ];
+
+        $proven = false;
+
+        foreach ($identifying as [$mine, $theirs]) {
+            if ($mine === null || $theirs === null) {
+                continue;
+            }
+
+            if ($mine !== $theirs) {
+                return false;
+            }
+
+            $proven = true;
+        }
+
+        return $proven;
     }
 
     /** @return array<string, mixed> */

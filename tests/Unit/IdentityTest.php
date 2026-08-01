@@ -57,13 +57,41 @@ it('strips direct personal data but keeps the join keys when pseudonymised', fun
 });
 
 it('survives an array round trip', function (): void {
-    $identity = Identity::user(9, 'a@example.com', 'Adrian', 'c-9')->withAnonymousId('anon-9');
+    $identity = Identity::user(9, 'a@example.com', 'Adrian', 'c-9', ['source' => 'import', 'run' => 3])
+        ->withAnonymousId('anon-9');
 
     expect(Identity::fromArray($identity->toArray()))->toEqual($identity);
 });
 
-it('compares by type and id only', function (): void {
+it('compares by id when both sides carry one', function (): void {
     expect(Identity::user(1, 'a@example.com')->equals(Identity::user(1, 'renamed@example.com')))->toBeTrue()
+        ->and(Identity::user(1)->equals(Identity::user(2)))->toBeFalse()
         ->and(Identity::user(1)->equals(Identity::contact('1')))->toBeFalse()
         ->and(Identity::user(1)->equals(null))->toBeFalse();
+});
+
+it('never claims two unidentified identities are the same actor', function (): void {
+    // The manager builds exactly this shape for an email string when no
+    // ContactLocator is bound, which is the default. Before the fail-closed
+    // rewrite both of these compared equal, because type and id matched on null.
+    $alice = new Identity(type: Identity::TYPE_CONTACT, email: 'alice@example.com');
+    $bob = new Identity(type: Identity::TYPE_CONTACT, email: 'bob@example.com');
+
+    expect($alice->equals($bob))->toBeFalse()
+        ->and(Identity::anonymous()->equals(Identity::anonymous()))->toBeFalse();
+});
+
+it('accepts a join key as proof that two identities are the same actor', function (): void {
+    $fromLedger = (new Identity(type: Identity::TYPE_CONTACT))->withContactUuid('c-1');
+    $fromForm = (new Identity(type: Identity::TYPE_CONTACT))->withContactUuid('c-1');
+
+    expect($fromLedger->equals($fromForm))->toBeTrue()
+        ->and($fromLedger->equals($fromForm->withEmail('a@example.com')))->toBeTrue();
+});
+
+it('rejects a match when another shared field contradicts the join key', function (): void {
+    $one = (new Identity(type: Identity::TYPE_CONTACT))->withContactUuid('c-1')->withEmail('a@example.com');
+    $two = (new Identity(type: Identity::TYPE_CONTACT))->withContactUuid('c-1')->withEmail('b@example.com');
+
+    expect($one->equals($two))->toBeFalse();
 });
