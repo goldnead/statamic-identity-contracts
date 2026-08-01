@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 1.1.0 — 2026-08-01
 ### Major changes
 
 - **`Identity::equals()` is now fail-closed.** It previously compared `type` and
