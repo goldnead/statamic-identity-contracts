@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.0 — 2026-08-25
+
+### Fixed
+
+- **An address with an umlaut was not recognised as a contact.** `resolve()` decided whether a
+  string was an email address with `filter_var($subject, FILTER_VALIDATE_EMAIL)`, which predates
+  RFC 6531 and rejects every non-ASCII character in the local part and the domain alike. So
+  `bärbel.öztürk@beispiel.de` — an address every addon in this family stores, mails to, subscribes
+  and grants access to — fell straight past the contact branch to the anonymous actor, and the
+  bound `ContactLocator` was never asked.
+
+  Nothing failed visibly. The activity row was still written; it simply carried no `contact_uuid`,
+  which is exactly the column somebody later filters on to ask "what did this person do?". The
+  person's own trail was invisible to the screen built to find it.
+
+  New `Support\EmailShape::plausible()` judges the domain through its punycode form and a Unicode
+  local part on its own terms, while still refusing what is genuinely not an address: two at signs,
+  a space, angle brackets, a header injection attempt, an over-long envelope. Without `ext-intl` an
+  international domain is declined rather than guessed at.
+
 ## 1.1.0 — 2026-08-01
 ### Major changes
 

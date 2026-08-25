@@ -7,6 +7,7 @@ use Goldnead\IdentityContracts\Contracts\AnonymousIdResolver;
 use Goldnead\IdentityContracts\Contracts\ContactLocator;
 use Goldnead\IdentityContracts\Contracts\IdentityResolver;
 use Goldnead\IdentityContracts\Contracts\ProvidesIdentity;
+use Goldnead\IdentityContracts\Support\EmailShape;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class IdentityManager
@@ -83,7 +84,7 @@ class IdentityManager
             return $this->fromAuthenticatable($subject);
         }
 
-        if (is_string($subject) && filter_var($subject, FILTER_VALIDATE_EMAIL)) {
+        if (EmailShape::plausible($subject)) {
             // No CRM record (or no locator bound): still a contact-shaped actor,
             // but without a uuid. The email is never reused as an identifier.
             return $this->locateContact($subject)

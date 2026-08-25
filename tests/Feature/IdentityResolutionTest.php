@@ -137,3 +137,39 @@ it('ignores the auth guard when resolve_from_auth is off', function (): void {
 
     expect(IdentityContext::current()->isSystem())->toBeTrue();
 });
+
+it('reaches the contact locator for an international address', function (): void {
+    // The whole point of the EmailShape change. Before it, this address never
+    // got as far as the locator: it failed filter_var, fell through to the
+    // fallback, and the activity row it produced carried no contact_uuid — so
+    // the person's own trail was invisible to the filter built to find it.
+    app()->bind(ContactLocator::class, fn () => new class implements ContactLocator
+    {
+        public function locateByEmail(string $email): ?Identity
+        {
+            return $email === 'bärbel.öztürk@beispiel.de'
+                ? new Identity(type: Identity::TYPE_CONTACT, contactUuid: 'c-42', email: $email)
+                : null;
+        }
+
+        public function locateByUuid(string $uuid): ?Identity
+        {
+            return null;
+        }
+    });
+
+    $identity = IdentityContext::resolve('bärbel.öztürk@beispiel.de');
+
+    expect($identity->type)->toBe(Identity::TYPE_CONTACT)
+        ->and($identity->contactUuid)->toBe('c-42');
+});
+
+it('still treats an international address as a contact when no locator is bound', function (): void {
+    // No CRM record is a different thing from "not an address". The actor is
+    // contact-shaped either way; it just has no uuid yet.
+    $identity = IdentityContext::resolve('post@bäckerei.de');
+
+    expect($identity->type)->toBe(Identity::TYPE_CONTACT)
+        ->and($identity->email)->toBe('post@bäckerei.de')
+        ->and($identity->contactUuid)->toBeNull();
+});
