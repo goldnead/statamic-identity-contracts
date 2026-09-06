@@ -47,6 +47,9 @@
         }
     },
     "extra": {
+        "statamic": {
+            "developer-url": "https://adriangoldner.dev"
+        },
         "laravel": {
             "providers": [
                 "Goldnead\\IdentityContracts\\ServiceProvider"
