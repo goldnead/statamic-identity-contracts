@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mime\Email;
 
 beforeEach(function () {
     config([
@@ -192,6 +193,21 @@ it('mails a fresh link from the expired page, to the address of the account only
     });
     expect(Auth::check())->toBeFalse();
     Carbon::setTestNow();
+});
+
+it('renders the renew mail with the link in both parts, escaped', function () {
+    $mail = new AutoLoginRenewedMail('https://example.test/!/autologin?a=1&b=2');
+
+    $html = $mail->render();
+    $mail->build();
+    $callbacks = $mail->callbacks;
+    $message = (new Email)->html('x');
+    foreach ($callbacks as $callback) {
+        $callback($message);
+    }
+
+    expect($html)->toContain('href="https://example.test/!/autologin?a=1&amp;b=2"')
+        ->and($message->getTextBody())->toContain('https://example.test/!/autologin?a=1&b=2');
 });
 
 it('rate limits the renew mail', function () {
