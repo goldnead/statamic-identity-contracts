@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.3.0 — 2026-10-23
+
+### Added
+
+- **Auto login links for mail.** A link in a mail to a page behind the login used to end on the
+  login form, with a password nobody ever told the reader. `AutoLogin` now turns such links into
+  signed, expiring links that log in exactly the recipient and redirect to the original internal
+  path. Mail-rendering addons call `rewriteHtml()` / `rewriteText()` / `linkFor()` before click
+  tracking wraps the link.
+  - Off by default (`identity-contracts.autologin.enabled`); only paths under
+    `autologin.paths` are rewritten and only they are accepted when a link is used. The target
+    is always an internal path: no scheme, host, backslash or control character.
+  - Never for users with control panel access or a super flag; optional role allowlist and host
+    veto callback.
+  - The link is bound to a keyed hash of the account's id, address, password hash and remember
+    token, so changing any of them ends every link issued earlier. Nothing is stored, so a mail
+    scanner opening the link first does not use it up.
+  - A different user already logged in is asked before the account is switched (POST with CSRF).
+    The session id is regenerated on login. The response is `no-store` with no referrer. Nothing
+    is logged. The endpoint is rate limited.
+  - An expired link shows a friendly page that offers a fresh link by mail (limited per account
+    and hour) or the login. A tampered link answers 403.
+  - Optional `verify_email`: sets `email_verified_at` on the first login through a link.
+  - Fires `AutoLoginSucceeded` (user and path, never the link).
+
 ## 1.2.0 — 2026-08-25
 
 ### Fixed

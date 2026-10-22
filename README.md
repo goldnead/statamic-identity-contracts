@@ -161,6 +161,31 @@ and writes nothing. With `anonymous.enabled` off it returns `null` forever.
 Headless applications that always pass the actor explicitly (API hubs, import
 pipelines) should set `resolve_from_auth` to `false`.
 
+## Auto login links for mail
+
+Switched on with `identity-contracts.autologin.enabled` and the list of internal
+path prefixes in `autologin.paths` (for example `['/account/']`). Addons that
+render a mail for one known recipient call `AutoLogin::rewriteHtml($html, $email)`
+(and `rewriteText()`) before they wrap links for click tracking. A matching
+internal link becomes a signed URL that logs in exactly that account and redirects
+to the original path. See `config/identity-contracts.php` for every option.
+
+Things worth knowing before you switch it on:
+
+- The link is a credential for as long as it lives (14 days by default). It is
+  bound to the account's password hash, address and remember token, so changing
+  any of them ends all links issued earlier, but it can be used again until then.
+  Mail providers that rewrite links for click tracking see it.
+- Users with control panel access or a super flag are never logged in this way.
+  Use `allowed_roles` to narrow it further.
+- Somebody logged in as another account is asked before being switched. Somebody
+  logged in as nobody is logged in without being asked: anyone holding a valid link
+  of their own can therefore sign a visitor into *their* account (login CSRF). The
+  account must not hold anything the visitor could be tricked into entering.
+- `verify_email` fires on any successful request of a valid link, including a mail
+  scanner's. Switch it on only where "the link reached the mailbox" is what verified means.
+- The rate limit is per IP, so the application needs correct trusted proxies.
+
 ## Privacy notes
 
 - Nothing is persisted by this package.
