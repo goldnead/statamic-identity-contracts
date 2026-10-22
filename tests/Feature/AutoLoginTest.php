@@ -436,8 +436,29 @@ it('rate limits the endpoint', function () {
     $this->get('/!/autologin?x=4')->assertStatus(429);
 });
 
-it('answers 404 on the route when switched off', function () {
+it('answers 404 on the route when switched off and the link is not validly signed', function () {
     config(['identity-contracts.autologin.enabled' => false]);
 
     $this->get('/!/autologin')->assertNotFound();
+    $this->get('/!/autologin?u=1&b=x&to=%2Faccount%2F&expires=9999999999&signature=x')->assertNotFound();
+});
+
+it('sends a validly signed link to the login page with the target as intended when switched off, without a login', function () {
+    $link = signed('lea@example.test', $this->lesson);
+
+    config(['identity-contracts.autologin.enabled' => false]);
+
+    $response = $this->get($link);
+
+    $response->assertRedirect('/login');
+    $response->assertHeader('Referrer-Policy', 'no-referrer');
+    expect(session('url.intended'))->toBe('/account/courses/cvt/lessons/tag-1');
+    $this->assertGuest();
+});
+
+it('does not rewrite data-href attributes', function () {
+    $html = '<a data-href="'.$this->lesson.'" href="https://example.test/preise">x</a>'
+        .'<a class="b" data-href='."'".$this->lesson."'".'>y</a>';
+
+    expect($this->links->rewriteHtml($html, 'lea@example.test'))->toBe($html);
 });

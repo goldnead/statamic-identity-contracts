@@ -24,8 +24,10 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * What it checks, in this order, and what it answers when a check fails:
  *
- *  1. Switched off: 404. Signature wrong or missing: 403, with nothing said
- *     about why. Nothing below runs for a URL that is not ours.
+ *  1. Switched off: a validly signed link leads to the login page with its
+ *     target remembered (no login), anything else is a 404. Signature wrong
+ *     or missing: 403, with nothing said about why. Nothing below runs for a
+ *     URL that is not ours.
  *  2. The account is looked up and the binding compared. A password or address
  *     changed since the mail went out: a friendly page, no new link (a new link
  *     would hand a login to whoever holds the old mail).
@@ -45,7 +47,10 @@ class AutoLoginController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        abort_unless($this->links->enabled(), 404);
+        if (! $this->links->enabled()) {
+            return $this->switchedOff($request);
+        }
+
         abort_unless($request->query('expires') !== null && URL::hasCorrectSignature($request, true, $this->links->ignoredParameters()), 403);
 
         $user = $this->links->userById($request->query('u'));
@@ -102,6 +107,29 @@ class AutoLoginController extends Controller
         AutoLoginSucceeded::dispatch($user, $path);
 
         return $this->redirect($path);
+    }
+
+    /**
+     * Switched off (the kill switch): nobody is logged in. A mail that went out
+     * before still carries a link, so a validly signed one leads to the login
+     * page with its target remembered, as if the person had opened the page
+     * directly. Anything else is a 404, as when the feature does not exist.
+     */
+    protected function switchedOff(Request $request): Response
+    {
+        $to = $request->query('to');
+        $path = is_string($to) ? $this->links->internalPath($to) : null;
+
+        abort_unless(
+            $path !== null
+                && $request->query('expires') !== null
+                && URL::hasCorrectSignature($request, true, $this->links->ignoredParameters()),
+            404,
+        );
+
+        $request->session()->put('url.intended', $path);
+
+        return $this->redirect((string) config('identity-contracts.autologin.login_url', '/login'));
     }
 
     protected function renew(Authenticatable $user, string $path): Response
