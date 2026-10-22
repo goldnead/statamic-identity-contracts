@@ -5,6 +5,7 @@ namespace Goldnead\IdentityContracts\AutoLogin;
 use Goldnead\IdentityContracts\Support\EmailShape;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Statamic\Facades\User;
 
@@ -73,6 +74,12 @@ class AutoLogin
         $path = $this->internalPath($url);
 
         if ($path === null) {
+            return null;
+        }
+
+        // A host whose route cache predates this package has no such route. The
+        // mail goes out with its plain link rather than not at all.
+        if (! Route::has(self::ROUTE)) {
             return null;
         }
 
@@ -334,10 +341,11 @@ class AutoLogin
 
         $statamic = User::fromUser($user);
 
-        // A Statamic site whose user cannot be read as a Statamic user is not
-        // one this class can vouch for.
+        // An account Statamic's user store does not know cannot sign in to the
+        // control panel. (The super flag and the role allowlist are checked
+        // separately, whatever Statamic says.)
         if ($statamic === null) {
-            throw new \RuntimeException('Not a Statamic user.');
+            return false;
         }
 
         return $statamic->isSuper() || $statamic->hasPermission('access cp');
