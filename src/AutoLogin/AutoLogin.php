@@ -204,7 +204,7 @@ class AutoLogin
      */
     public function ignoredParameters(): array
     {
-        $ignored = array_map('strval', (array) config('identity-contracts.autologin.ignore_parameters', []));
+        $ignored = array_map('strval', (array) config('identity-contracts.autologin.ignore_parameters', ['_se']));
 
         return array_values(array_diff($ignored, ['u', 'b', 'to', 'expires', 'signature']));
     }
