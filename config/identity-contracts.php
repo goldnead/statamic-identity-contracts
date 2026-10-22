@@ -55,7 +55,7 @@ return [
     | Addons that render mail (marketing, lead magnets) ask AutoLogin to rewrite
     | their links; this block says whether and for whom that happens.
     |
-    | enabled        Off by default. Nothing is rewritten and the route answers 404.
+    | enabled        Off by default. Nothing is rewritten; a validly signed link still sent earlier redirects to the login page (target remembered, nobody logged in), anything else answers 404.
     | route          Path of the endpoint. The signature is bound to it.
     | paths          Only internal paths starting with one of these are rewritten
     |                and only they are accepted when a link is used. Empty = nothing.
