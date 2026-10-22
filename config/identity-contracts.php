@@ -90,6 +90,10 @@ return [
         'rate_limit' => 30,
         'renew_limit' => 3,
         'login_url' => '/login',
+        // Query parameters a sending platform adds to a link in transit (Brevo
+        // appends `_se`). They are left out of the signature check. u, b, to,
+        // expires and signature can never be listed here.
+        'ignore_parameters' => ['_se'],
     ],
 
 ];

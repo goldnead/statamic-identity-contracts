@@ -152,6 +152,21 @@ it('answers 403 for a tampered signature, a tampered target and a tampered user'
     expect(Auth::check())->toBeFalse();
 });
 
+it('still works when a sending platform appends its own parameter, and only then', function () {
+    $link = signed('lea@example.test', $this->lesson);
+
+    $this->get($link.'&_se=amVhbkBleGFtcGxl')->assertRedirect('/account/courses/cvt/lessons/tag-1');
+    Auth::logout();
+    $this->get($link.'&foo=bar')->assertForbidden();
+    $this->get(preg_replace('/to=[^&]+/', 'to='.urlencode('/account/other'), $link).'&_se=x')->assertForbidden();
+});
+
+it('refuses encoded dot segments when building a link', function () {
+    expect($this->links->linkFor('lea@example.test', '/account/%2e%2e/admin'))->toBeNull()
+        ->and($this->links->linkFor('lea@example.test', '/account/../admin'))->toBeNull()
+        ->and($this->links->linkFor('lea@example.test', '/account/a.b/c'))->not->toBeNull();
+});
+
 it('shows a friendly page with a new-link option and does not log in once the link has expired', function () {
     Carbon::setTestNow('2026-10-23 12:00:00');
     $link = signed('lea@example.test', $this->lesson);
@@ -226,6 +241,12 @@ it('never redirects to an external or scheme-relative target', function (string 
     'javascript' => 'javascript:alert(1)',
     'newline' => "/account/x\r\nLocation: https://evil.test",
     'no leading slash' => 'account/x',
+    'dot segments' => '/account/../admin',
+    'encoded dot segments' => '/account/%2e%2e/admin',
+    'mixed encoded dots' => '/account/.%2E/x',
+    'encoded slash' => '/account%2f..%2fadmin',
+    'encoded backslash' => '/account/%5cevil',
+    'encoded null' => '/account/%00',
 ]);
 
 it('does not auto login a user with a super flag, a disallowed role or cp access', function () {

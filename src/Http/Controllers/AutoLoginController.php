@@ -46,7 +46,7 @@ class AutoLoginController extends Controller
     public function __invoke(Request $request): Response
     {
         abort_unless($this->links->enabled(), 404);
-        abort_unless($request->query('expires') !== null && URL::hasCorrectSignature($request), 403);
+        abort_unless($request->query('expires') !== null && URL::hasCorrectSignature($request, true, $this->links->ignoredParameters()), 403);
 
         $user = $this->links->userById($request->query('u'));
 

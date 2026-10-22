@@ -171,7 +171,11 @@ class AutoLogin
 
         $path = (string) parse_url($relative, PHP_URL_PATH);
 
-        if ($path === '' || str_contains($path, '/../') || str_ends_with($path, '/..')) {
+        // Dot segments, literal or percent-encoded, would let a browser walk out
+        // of the prefix; so would an encoded slash, backslash or control character.
+        if ($path === ''
+            || preg_match('~(^|/)\.\.?(/|$)~', $path) === 1
+            || preg_match('/%(2e|2f|5c|[01][0-9a-f]|7f)/i', $path) === 1) {
             return null;
         }
 
@@ -184,6 +188,18 @@ class AutoLogin
         }
 
         return null;
+    }
+
+    /**
+     * Query parameters a sending platform may add without invalidating a link.
+     *
+     * @return list<string>
+     */
+    public function ignoredParameters(): array
+    {
+        $ignored = array_map('strval', (array) config('identity-contracts.autologin.ignore_parameters', []));
+
+        return array_values(array_diff($ignored, ['u', 'b', 'to', 'expires', 'signature']));
     }
 
     /**
