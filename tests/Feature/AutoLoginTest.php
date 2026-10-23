@@ -456,9 +456,38 @@ it('sends a validly signed link to the login page with the target as intended wh
     $this->assertGuest();
 });
 
-it('does not rewrite data-href attributes', function () {
+it('does not rewrite data-href attributes or bindings that merely end in href', function () {
     $html = '<a data-href="'.$this->lesson.'" href="https://example.test/preise">x</a>'
-        .'<a class="b" data-href='."'".$this->lesson."'".'>y</a>';
+        .'<a class="b" data-href='."'".$this->lesson."'".'>y</a>'
+        .'<a :href="'.$this->lesson.'">a</a><a @href="'.$this->lesson.'">b</a>'
+        .'<a x-bind:href="'.$this->lesson.'">c</a><a data.href="'.$this->lesson.'">d</a>';
 
     expect($this->links->rewriteHtml($html, 'lea@example.test'))->toBe($html);
+});
+
+it('still rewrites a real href in capitals, after other attributes and across a line break', function () {
+    $html = "<a data-href=\"/x\" class=\"b\"\n   HREF=\"{$this->lesson}\">z</a>";
+
+    expect($this->links->rewriteHtml($html, 'lea@example.test'))->toContain('HREF="https://example.test/!/autologin?');
+});
+
+it('keeps answering 404 for a validly signed link with a bad target when switched off', function () {
+    $link = signed('lea@example.test', $this->lesson);
+    $bad = str_replace(urlencode('/account/courses/cvt/lessons/tag-1'), urlencode('/preise'), $link);
+
+    config(['identity-contracts.autologin.enabled' => false]);
+
+    $this->get($bad)->assertNotFound();
+});
+
+it('also forwards an expired but correctly signed link to the login when switched off, and never logs in', function () {
+    $link = signed('lea@example.test', $this->lesson);
+
+    config(['identity-contracts.autologin.enabled' => false]);
+    Carbon::setTestNow(now()->addDays(60));
+
+    $this->get($link)->assertRedirect('/login')->assertHeader('Cache-Control', 'no-store, private');
+    $this->assertGuest();
+
+    Carbon::setTestNow();
 });

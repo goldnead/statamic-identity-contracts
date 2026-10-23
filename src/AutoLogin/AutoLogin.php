@@ -107,7 +107,7 @@ class AutoLogin
         }
 
         return (string) preg_replace_callback(
-            '/(<a\b[^>]*?(?<![\w-])href\s*=\s*)(["\'])(.*?)\2/is',
+            '/(<a\b[^>]*?(?<=\s)href\s*=\s*)(["\'])(.*?)\2/is',
             function (array $m) use ($user): string {
                 $link = $this->linkForUser($user, html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5));
 

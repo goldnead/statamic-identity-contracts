@@ -7,7 +7,8 @@
 - **Kill switch no longer breaks mails already sent.** With `autologin.enabled` off, a validly
   signed link used to answer 404. It now redirects to `autologin.login_url` and remembers the
   target as `url.intended`, without logging anybody in. Unsigned or foreign URLs still answer 404.
-- `rewriteHtml()` no longer rewrites `data-href` attributes of an anchor, only `href`.
+- `rewriteHtml()` no longer rewrites `data-href`, `:href`, `@href`, `x-bind:href` and similar
+  attributes of an anchor, only a real `href` that follows whitespace.
 
 ## 1.3.0 — 2026-10-23
 
