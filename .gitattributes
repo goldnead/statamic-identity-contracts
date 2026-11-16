@@ -15,3 +15,6 @@
 /phpstan.neon       export-ignore
 /phpstan-baseline.neon export-ignore
 /addon-lint.json    export-ignore
+
+# Internal listing files: not needed by installing sites.
+/art                export-ignore
