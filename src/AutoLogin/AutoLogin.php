@@ -5,6 +5,7 @@ namespace Goldnead\IdentityContracts\AutoLogin;
 use Goldnead\IdentityContracts\Support\EmailShape;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Statamic\Facades\User;
@@ -106,7 +107,7 @@ class AutoLogin
             return $html;
         }
 
-        return (string) preg_replace_callback(
+        $rewritten = preg_replace_callback(
             '/(<a\b[^>]*?(?<=\s)href\s*=\s*)(["\'])(.*?)\2/is',
             function (array $m) use ($user): string {
                 $link = $this->linkForUser($user, html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5));
@@ -115,6 +116,8 @@ class AutoLogin
             },
             $html,
         );
+
+        return $this->orOriginal($rewritten, $html, 'html');
     }
 
     /** The same for the plain text part: bare URLs. */
@@ -126,7 +129,7 @@ class AutoLogin
             return $text;
         }
 
-        return (string) preg_replace_callback(
+        $rewritten = preg_replace_callback(
             '~https?://[^\s<>"\']+~i',
             function (array $m) use ($user): string {
                 // Sentence punctuation after a URL is not part of it.
@@ -138,6 +141,28 @@ class AutoLogin
             },
             $text,
         );
+
+        return $this->orOriginal($rewritten, $text, 'text');
+    }
+
+    /**
+     * A failed preg_* call returns null (backtrack limit, JIT stack). Cast to
+     * string that is an empty body, and the recipient gets a blank mail with
+     * nothing in the log. The original goes out unchanged instead: the links
+     * stay plain, which is the documented fallback for any mail we do not touch.
+     */
+    protected function orOriginal(?string $rewritten, string $original, string $part): string
+    {
+        if ($rewritten !== null) {
+            return $rewritten;
+        }
+
+        Log::warning('identity-contracts: auto-login link rewrite failed, mail left unchanged', [
+            'part' => $part,
+            'error' => preg_last_error_msg(),
+        ]);
+
+        return $original;
     }
 
     /**

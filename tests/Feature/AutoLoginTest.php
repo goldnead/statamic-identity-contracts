@@ -465,6 +465,27 @@ it('does not rewrite data-href attributes or bindings that merely end in href', 
     expect($this->links->rewriteHtml($html, 'lea@example.test'))->toBe($html);
 });
 
+it('hands the original body back when the regex engine gives up, instead of an empty mail', function () {
+    Log::spy();
+
+    // An href whose closing quote never comes: the lazy match runs to the end
+    // of the document and the engine gives up. preg_* then returns null, which
+    // used to be cast to an empty string and went out as a blank mail.
+    $html = '<p><a href="'.$this->lesson.'">Lektion</a></p><a href="'.str_repeat('x', 3000);
+
+    $old = ini_set('pcre.backtrack_limit', '1000');
+
+    try {
+        $out = $this->links->rewriteHtml($html, 'lea@example.test');
+    } finally {
+        ini_set('pcre.backtrack_limit', (string) $old);
+    }
+
+    expect($out)->toBe($html);
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
 it('still rewrites a real href in capitals, after other attributes and across a line break', function () {
     $html = "<a data-href=\"/x\" class=\"b\"\n   HREF=\"{$this->lesson}\">z</a>";
 
