@@ -473,7 +473,8 @@ it('hands the original body back when the regex engine gives up, instead of an e
     // used to be cast to an empty string and went out as a blank mail.
     $html = '<p><a href="'.$this->lesson.'">Lektion</a></p><a href="'.str_repeat('x', 3000);
 
-    $old = ini_set('pcre.backtrack_limit', '1000');
+    $old = ini_get('pcre.backtrack_limit');
+    ini_set('pcre.backtrack_limit', '1000');
 
     try {
         $out = $this->links->rewriteHtml($html, 'lea@example.test');
