@@ -44,6 +44,8 @@ class AutoLogin
 {
     public const ROUTE = 'identity.autologin';
 
+    private bool $warnedModelFallback = false;
+
     public function enabled(): bool
     {
         return (bool) config('identity-contracts.autologin.enabled', false);
@@ -288,6 +290,12 @@ class AutoLogin
         $model = $this->userModel();
 
         if ($model === null) {
+            // File-based Statamic users have no Eloquent model: every mail to them
+            // goes out with its plain links. Say so once per mail, not silently.
+            Log::warning('identity-contracts: no Eloquent user model, auto-login links skipped (file-based users?)', [
+                'guard' => config('identity-contracts.autologin.guard') ?: config('auth.defaults.guard'),
+            ]);
+
             return null;
         }
 
@@ -314,7 +322,22 @@ class AutoLogin
     {
         $guard = config('identity-contracts.autologin.guard') ?: config('auth.defaults.guard');
         $provider = config("auth.guards.{$guard}.provider");
-        $model = config("auth.providers.{$provider}.model") ?? config('auth.providers.users.model');
+        $model = config("auth.providers.{$provider}.model");
+
+        if ($model === null) {
+            $model = config('auth.providers.users.model');
+
+            // Logged once per instance: this runs for every mail, and the fallback
+            // means the guard's own provider has no model, which is worth one line.
+            if ($model !== null && ! $this->warnedModelFallback) {
+                $this->warnedModelFallback = true;
+
+                Log::warning('identity-contracts: guard provider has no model, falling back to auth.providers.users.model', [
+                    'guard' => $guard,
+                    'provider' => $provider,
+                ]);
+            }
+        }
 
         return is_string($model) && is_a($model, Model::class, true) ? $model : null;
     }
@@ -353,7 +376,14 @@ class AutoLogin
             }
 
             return true;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            // Still "no" (fails closed), but no longer silently: a broken veto or
+            // Statamic error would otherwise look like "nobody gets a link".
+            Log::warning('identity-contracts: eligibility check failed, no auto-login link issued', [
+                'user_id' => $user->getAuthIdentifier(),
+                'exception' => $e::class,
+            ]);
+
             return false;
         }
     }

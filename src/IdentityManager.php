@@ -9,6 +9,7 @@ use Goldnead\IdentityContracts\Contracts\IdentityResolver;
 use Goldnead\IdentityContracts\Contracts\ProvidesIdentity;
 use Goldnead\IdentityContracts\Support\EmailShape;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Log;
 
 class IdentityManager
 {
@@ -90,6 +91,12 @@ class IdentityManager
             return $this->locateContact($subject)
                 ?? new Identity(type: Identity::TYPE_CONTACT, email: $subject);
         }
+
+        // Logged here, not in fallback(): current() reaches fallback() for every
+        // anonymous visitor, which is not an error. Only the type, never the value.
+        Log::notice('identity-contracts: subject not recognised, falling back', [
+            'type' => get_debug_type($subject),
+        ]);
 
         return $this->fallback();
     }

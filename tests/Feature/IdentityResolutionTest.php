@@ -5,6 +5,7 @@ use Goldnead\IdentityContracts\Facades\IdentityContext;
 use Goldnead\IdentityContracts\Identity;
 use Goldnead\IdentityContracts\Tests\Fixtures\FixtureUser;
 use Goldnead\IdentityContracts\Tests\Fixtures\SelfDescribingUser;
+use Illuminate\Support\Facades\Log;
 
 it('resolves an authenticatable without knowing the model', function (): void {
     $user = new FixtureUser(['id' => 5, 'email' => 'a@example.com', 'name' => 'Adrian']);
@@ -80,6 +81,17 @@ it('prefers a custom resolver over the bundled behaviour', function (): void {
 
 it('degrades an unrecognised subject to the fallback instead of throwing', function (): void {
     expect(IdentityContext::resolve(new stdClass)->isSystem())->toBeTrue();
+});
+
+it('logs a notice when an unrecognised subject falls back, without writing the value', function (): void {
+    Log::spy();
+
+    IdentityContext::resolve('kein-mail-und-kein-objekt');
+
+    Log::shouldHaveReceived('notice')->once()->withArgs(
+        fn (string $message, array $context) => ! str_contains(json_encode($context), 'kein-mail-und-kein-objekt')
+            && ! str_contains($message, 'kein-mail-und-kein-objekt'),
+    );
 });
 
 it('falls back to the system actor in the console', function (): void {
