@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -145,9 +146,18 @@ class AutoLoginController extends Controller
 
         $url = $this->links->linkForUser($user, $path);
 
-        if ($url !== null) {
-            Mail::to($this->links->emailOf($user))->send(new AutoLoginRenewedMail($url));
+        // No fresh link (switched off in between, a veto, a missing route) means
+        // no mail. The page must not say "we sent you a link" then: it sends the
+        // person to the normal login.
+        if ($url === null) {
+            Log::warning('identity-contracts: no fresh auto-login link could be issued on renew, no mail sent', [
+                'user_id' => $user->getAuthIdentifier(),
+            ]);
+
+            return $this->page('autologin.outdated', 410);
         }
+
+        Mail::to($this->links->emailOf($user))->send(new AutoLoginRenewedMail($url));
 
         return $this->page('autologin.renewed', 200);
     }
@@ -161,7 +171,16 @@ class AutoLoginController extends Controller
             return;
         }
 
-        $user->forceFill(['email_verified_at' => now()])->save();
+        // The person is logged in at this point. A failing save must not turn
+        // the click into a 500; the address just stays unverified.
+        try {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        } catch (\Throwable $e) {
+            Log::warning('identity-contracts: the address could not be marked as verified after an auto-login', [
+                'user_id' => $user->getAuthIdentifier(),
+                'exception' => $e::class,
+            ]);
+        }
     }
 
     protected function redirect(string $path): Response
