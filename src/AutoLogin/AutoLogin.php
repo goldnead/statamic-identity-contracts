@@ -46,6 +46,8 @@ class AutoLogin
 
     private bool $warnedModelFallback = false;
 
+    private bool $warnedNoModel = false;
+
     public function enabled(): bool
     {
         return (bool) config('identity-contracts.autologin.enabled', false);
@@ -291,10 +293,15 @@ class AutoLogin
 
         if ($model === null) {
             // File-based Statamic users have no Eloquent model: every mail to them
-            // goes out with its plain links. Say so once per mail, not silently.
-            Log::warning('identity-contracts: no Eloquent user model, auto-login links skipped (file-based users?)', [
-                'guard' => config('identity-contracts.autologin.guard') ?: config('auth.defaults.guard'),
-            ]);
+            // goes out with its plain links. Say so once per instance, not silently
+            // and not once per mail.
+            if (! $this->warnedNoModel) {
+                $this->warnedNoModel = true;
+
+                Log::warning('identity-contracts: no Eloquent user model, auto-login links skipped (file-based users?)', [
+                    'guard' => config('identity-contracts.autologin.guard') ?: config('auth.defaults.guard'),
+                ]);
+            }
 
             return null;
         }
