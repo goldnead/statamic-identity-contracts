@@ -513,3 +513,39 @@ it('also forwards an expired but correctly signed link to the login when switche
 
     Carbon::setTestNow();
 });
+
+it('logs a warning when the eligibility check throws, without the address in the log', function () {
+    Log::spy();
+    config(['identity-contracts.autologin.eligible' => fn () => throw new RuntimeException('veto kaputt')]);
+
+    expect($this->links->linkFor('lea@example.test', $this->lesson))->toBeNull();
+
+    Log::shouldHaveReceived('warning')->once()->withArgs(
+        fn (string $message, array $context) => str_contains($message, 'eligib')
+            && ! str_contains(json_encode($context), 'lea@example.test')
+            && ! str_contains($message, 'lea@example.test'),
+    );
+});
+
+it('logs a warning when the user model is missing, so the mail does not go out without a link unnoticed', function () {
+    Log::spy();
+    config(['auth.providers.users.model' => null]);
+
+    expect($this->links->linkFor('lea@example.test', $this->lesson))->toBeNull();
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('logs once when the user model comes from the default users provider instead of the guard provider', function () {
+    Log::spy();
+    $guard = config('auth.defaults.guard');
+    config([
+        "auth.guards.{$guard}.provider" => 'members',
+        'auth.providers.members' => ['driver' => 'eloquent', 'model' => null],
+    ]);
+
+    expect($this->links->linkFor('lea@example.test', $this->lesson))->not->toBeNull()
+        ->and($this->links->linkFor('lea@example.test', $this->lesson))->not->toBeNull();
+
+    Log::shouldHaveReceived('warning')->once();
+});
