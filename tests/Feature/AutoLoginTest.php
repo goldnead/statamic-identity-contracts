@@ -195,6 +195,29 @@ it('mails a fresh link from the expired page, to the address of the account only
     Carbon::setTestNow();
 });
 
+it('does not claim a mail went out when no fresh link could be issued', function () {
+    Mail::fake();
+    Log::spy();
+    Carbon::setTestNow('2026-10-23 12:00:00');
+    $link = signed('lea@example.test', $this->lesson);
+    Carbon::setTestNow('2026-11-10 12:00:00');
+
+    // The veto allows the link itself and the controller's own check, then
+    // says no when the renew path asks for the fresh link.
+    $calls = 0;
+    config(['identity-contracts.autologin.eligible' => function () use (&$calls) {
+        return ++$calls <= 1;
+    }]);
+
+    $this->post(path($link), ['action' => 'renew'])
+        ->assertStatus(410)
+        ->assertDontSee('geschickt');
+
+    Mail::assertNothingSent();
+    Log::shouldHaveReceived('warning')->withArgs(fn ($message) => str_contains($message, 'renew'))->once();
+    Carbon::setTestNow();
+});
+
 it('renders the renew mail with the link in both parts, escaped', function () {
     $mail = new AutoLoginRenewedMail('https://example.test/!/autologin?a=1&b=2');
 
@@ -370,6 +393,22 @@ it('marks the address as verified on the first login when the host wants that', 
     $this->get(path($link));
 
     expect($this->user->fresh()->email_verified_at)->not->toBeNull();
+});
+
+it('logs in anyway when marking the address verified fails, and says so in the log', function () {
+    Log::spy();
+    config(['identity-contracts.autologin.verify_email' => true]);
+    $link = signed('lea@example.test', $this->lesson);
+    AutoLoginUser::saving(fn () => throw new RuntimeException('db weg'));
+
+    try {
+        $this->get(path($link))->assertRedirect();
+    } finally {
+        AutoLoginUser::flushEventListeners();
+    }
+
+    expect(Auth::check())->toBeTrue();
+    Log::shouldHaveReceived('warning')->withArgs(fn ($message) => str_contains($message, 'verified'))->once();
 });
 
 it('leaves verification alone by default', function () {
